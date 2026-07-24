@@ -181,13 +181,6 @@ h1, h2, h3 { font-family: var(--font-display); margin: 0; }
   font-weight: 700;
   letter-spacing: 0.2px;
 }
-.printer-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.65rem;
-  color: #CFE0D3;
-}
 .printer-dot {
   width: 8px;
   height: 8px;
@@ -1128,24 +1121,147 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
   border-color: var(--amber);
 }
 
-.tabla-reporte {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.75rem;
+.reporte-bloque {
+  margin-bottom: 20px;
 }
-.tabla-reporte th {
-  text-align: left;
-  padding: 8px 6px;
-  border-bottom: 1.5px solid var(--line);
+.reporte-bloque h3 {
+  font-size: 0.85rem;
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+/* Métodos de pago */
+.metodo-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.metodo-row {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  position: relative;
+  overflow: hidden;
+}
+.metodo-row .mr-bar {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  background: var(--amber-light);
+  z-index: 0;
+  transition: width 0.3s ease;
+}
+.metodo-row .mr-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.metodo-row .mr-nombre { font-size: 0.85rem; font-weight: 600; }
+.metodo-row .mr-monto { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--amber-dark); }
+
+/* Productos más vendidos */
+.top-productos-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.top-producto-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 12px;
+}
+.top-producto-row .tp-rank {
+  font-family: var(--font-mono);
+  font-weight: 700;
   color: var(--ink-soft);
-  font-weight: 600;
+  font-size: 0.8rem;
+  width: 18px;
+  flex-shrink: 0;
 }
-.tabla-reporte td {
-  padding: 8px 6px;
+.top-producto-row .tp-info { flex: 1; min-width: 0; }
+.top-producto-row .tp-nombre { font-size: 0.85rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.top-producto-row .tp-cantidad { font-size: 0.68rem; color: var(--ink-soft); }
+.top-producto-row .tp-total { font-family: var(--font-mono); font-size: 0.82rem; font-weight: 700; color: var(--success); flex-shrink: 0; }
+
+/* Ventas por cajero */
+.cajero-breakdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cajero-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.cajero-row .cr-nombre { font-size: 0.85rem; font-weight: 600; }
+.cajero-row .cr-meta { font-size: 0.68rem; color: var(--ink-soft); }
+.cajero-row .cr-total { font-family: var(--font-mono); font-size: 0.85rem; font-weight: 700; color: var(--pine); }
+
+/* Detalle por día (expandible) */
+.reporte-dias-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.reporte-dia-card {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.reporte-dia-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  cursor: pointer;
+}
+.reporte-dia-header .dh-fecha { font-size: 0.85rem; font-weight: 700; color: var(--pine); }
+.reporte-dia-header .dh-meta { font-size: 0.68rem; color: var(--ink-soft); }
+.reporte-dia-header .dh-right { display: flex; align-items: center; gap: 8px; }
+.reporte-dia-header .dh-total { font-family: var(--font-mono); font-size: 0.9rem; font-weight: 700; color: var(--amber-dark); }
+.reporte-dia-header .dh-chevron { transition: transform 0.2s ease; color: var(--ink-soft); }
+.reporte-dia-card.open .dh-chevron { transform: rotate(180deg); }
+.reporte-dia-transacciones {
+  display: none;
+  border-top: 1px dashed var(--line);
+  padding: 4px 12px 10px;
+}
+.reporte-dia-card.open .reporte-dia-transacciones { display: block; }
+.transaccion-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
   border-bottom: 1px dashed var(--line);
+  font-size: 0.78rem;
 }
-.tabla-reporte tr:last-child td { border-bottom: none; }
-.tabla-reporte .mono { font-family: var(--font-mono); }
+.transaccion-row:last-child { border-bottom: none; }
+.transaccion-row .tr-hora { color: var(--ink-soft); font-family: var(--font-mono); font-size: 0.72rem; }
+.transaccion-row .tr-meta { color: var(--ink-soft); font-size: 0.7rem; }
+.transaccion-row .tr-total { font-family: var(--font-mono); font-weight: 700; }
+.reporte-vacio {
+  text-align: center;
+  padding: 20px;
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  background: var(--surface);
+  border: 1.5px dashed var(--line);
+  border-radius: 10px;
+}
 
 /* ===== CONFIGURACIÓN - PESTAÑAS ===== */
 .config-tabs {
@@ -1384,7 +1500,6 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
   .topbar { padding: 12px 16px; }
   .topbar .brand img { width: 32px; height: 32px; }
   .topbar h1 { font-size: 1.05rem; }
-  .printer-status { font-size: 0.75rem; gap: 8px; }
   .printer-dot { width: 9px; height: 9px; }
   .user-status { font-size: 0.78rem; }
   .user-status button { font-size: 1.15rem; padding: 6px; }
@@ -1529,10 +1644,6 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
     <img id="brandIcon" alt="Logo del negocio">
     <h1 id="brandTitle">Café POS</h1>
   </div>
-  <div class="printer-status" id="printerStatus">
-    <span class="printer-dot" id="printerDot"></span>
-    <span id="printerStatusText">Impresora</span>
-  </div>
   <div class="user-status hidden" id="userStatus">
     <span id="userBadge">—</span>
     <button id="btnLogout" aria-label="Cerrar sesión" title="Cerrar sesión">⏻</button>
@@ -1573,7 +1684,6 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
   <!-- REPORTES -->
   <section class="tab-panel" id="tab-reportes">
     <h2 style="font-size:1rem; margin-bottom:12px;">📊 Reporte de ventas</h2>
-    <div class="reporte-resumen" id="resumenReporte"></div>
     <div class="filtro-reporte">
       <select id="reportePeriodo">
         <option value="dia">Hoy</option>
@@ -1583,13 +1693,27 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
       <input type="month" id="reporteMes" style="display:none;">
       <input type="number" id="reporteAnio" placeholder="Año" style="display:none; width:80px;">
     </div>
-    <div style="overflow-x:auto;">
-      <table class="tabla-reporte" id="tablaReporte">
-        <thead>
-          <tr><th>Fecha</th><th>Ventas</th><th>Ganancia</th><th>Transacciones</th></tr>
-        </thead>
-        <tbody id="cuerpoReporte"></tbody>
-      </table>
+
+    <div class="reporte-resumen" id="resumenReporte"></div>
+
+    <div class="reporte-bloque">
+      <h3>💳 Ventas por método de pago</h3>
+      <div id="reporteMetodos" class="metodo-breakdown"></div>
+    </div>
+
+    <div class="reporte-bloque">
+      <h3>🏆 Productos más vendidos</h3>
+      <div id="reporteProductos" class="top-productos-list"></div>
+    </div>
+
+    <div class="reporte-bloque" id="bloqueCajeros">
+      <h3>🧑‍💼 Ventas por cajero</h3>
+      <div id="reporteCajeros" class="cajero-breakdown"></div>
+    </div>
+
+    <div class="reporte-bloque">
+      <h3>📅 Detalle por día</h3>
+      <div id="reporteDiasList" class="reporte-dias-list"></div>
     </div>
   </section>
 
@@ -1646,7 +1770,7 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
       <div class="config-section">
         <h3 style="font-size:0.9rem; margin-bottom:10px;">Impresora Bluetooth</h3>
         <div class="printer-box">
-          <div class="pb-status"><span class="printer-dot" id="printerDot2"></span><span id="printerStatusText2">No conectada</span></div>
+          <div class="pb-status"><span class="printer-dot" id="printerDot2"></span></div>
           <button class="btn-secondary" id="btnConectarImpresora">Conectar impresora</button>
           <button class="btn-danger-outline hidden" id="btnDesconectarImpresora">Olvidar impresora</button>
         </div>
@@ -2088,7 +2212,7 @@ function mostrarSesionEnTopbar(u){
   const userStatus = document.getElementById("userStatus");
   const userBadge = document.getElementById("userBadge");
   userStatus.classList.remove("hidden");
-  userBadge.textContent = u.username + (u.role==="admin" ? " · Admin" : " · Cajero");
+  userBadge.textContent = u.role === "admin" ? "ADMIN" : "CAJERO";
 }
 
 async function intentarLogin(){
@@ -2997,6 +3121,7 @@ async function finalizarVenta(pagos){
     total: Math.round(total*100)/100,
     tipoConsumo: tipoConsumo,
     estado: "completada",
+    cajero: sesionActual ? sesionActual.username : "—",
     detalle: carrito.map(l=>({
       productoId: l.productoId,
       nombre: l.nombre,
@@ -3135,7 +3260,7 @@ async function cargarReportes() {
   } else if (periodo === 'mes') {
     const [anio, mes] = mesInput.value.split('-').map(Number);
     const inicio = new Date(anio, mes-1, 1);
-    const fin = new Date(anio, mes, 0);
+    const fin = new Date(anio, mes, 0, 23, 59, 59);
     filtradas = filtradas.filter(v => {
       const d = new Date(v.fecha);
       return d >= inicio && d <= fin;
@@ -3143,23 +3268,21 @@ async function cargarReportes() {
   } else if (periodo === 'anio') {
     const anio = parseInt(anioInput.value);
     const inicio = new Date(anio, 0, 1);
-    const fin = new Date(anio, 11, 31);
+    const fin = new Date(anio, 11, 31, 23, 59, 59);
     filtradas = filtradas.filter(v => {
       const d = new Date(v.fecha);
       return d >= inicio && d <= fin;
     });
   }
 
+  // ---- Resumen general ----
   const totalVentas = filtradas.reduce((s, v) => s + v.total, 0);
   const totalTransacciones = filtradas.length;
   let gananciaTotal = 0;
   filtradas.forEach(v => {
-    if (v.detalle) {
-      v.detalle.forEach(d => {
-        const costo = d.costoUnitario || 0;
-        gananciaTotal += (d.precioUnitario - costo) * d.cantidad;
-      });
-    }
+    (v.detalle||[]).forEach(d => {
+      gananciaTotal += (d.precioUnitario - (d.costoUnitario||0)) * d.cantidad;
+    });
   });
 
   document.getElementById("resumenReporte").innerHTML = `
@@ -3177,40 +3300,122 @@ async function cargarReportes() {
     </div>
   `;
 
-  const agrupado = {};
-  filtradas.forEach(v => {
-    const fecha = new Date(v.fecha);
-    const key = fecha.toISOString().slice(0,10);
-    if (!agrupado[key]) agrupado[key] = { ventas: 0, ganancia: 0, transacciones: 0 };
-    agrupado[key].ventas += v.total;
-    agrupado[key].transacciones += 1;
-    if (v.detalle) {
-      v.detalle.forEach(d => {
-        const costo = d.costoUnitario || 0;
-        agrupado[key].ganancia += (d.precioUnitario - costo) * d.cantidad;
-      });
-    }
-  });
-
-  const cuerpo = document.getElementById("cuerpoReporte");
-  cuerpo.innerHTML = "";
-  const keys = Object.keys(agrupado).sort().reverse();
-  if (keys.length === 0) {
-    cuerpo.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:16px;color:var(--ink-soft);">No hay datos para este período</td></tr>`;
-  } else {
-    keys.forEach(key => {
-      const row = document.createElement("tr");
-      const d = agrupado[key];
-      row.innerHTML = `
-        <td>${new Date(key).toLocaleDateString('es-MX')}</td>
-        <td class="mono">${money(d.ventas)}</td>
-        <td class="mono">${money(d.ganancia)}</td>
-        <td>${d.transacciones}</td>
-      `;
-      cuerpo.appendChild(row);
-    });
+  if (filtradas.length === 0) {
+    const vacio = `<div class="reporte-vacio">No hay ventas registradas en este período</div>`;
+    document.getElementById("reporteMetodos").innerHTML = vacio;
+    document.getElementById("reporteProductos").innerHTML = vacio;
+    document.getElementById("reporteCajeros").innerHTML = vacio;
+    document.getElementById("reporteDiasList").innerHTML = vacio;
+    return;
   }
+
+  // ---- Ventas por método de pago ----
+  const metodos = {};
+  filtradas.forEach(v => {
+    (v.pagos||[]).forEach(p => {
+      metodos[p.metodo] = (metodos[p.metodo]||0) + p.monto;
+    });
+  });
+  const maxMetodo = Math.max(...Object.values(metodos), 1);
+  const metodosOrdenados = Object.entries(metodos).sort((a,b)=> b[1]-a[1]);
+  document.getElementById("reporteMetodos").innerHTML = metodosOrdenados.map(([nombre, monto]) => `
+    <div class="metodo-row">
+      <div class="mr-bar" style="width:${Math.round(monto/maxMetodo*100)}%"></div>
+      <div class="mr-content">
+        <span class="mr-nombre">${nombre}</span>
+        <span class="mr-monto">${money(monto)}</span>
+      </div>
+    </div>
+  `).join("");
+
+  // ---- Productos más vendidos ----
+  const productosAgg = {};
+  filtradas.forEach(v => {
+    (v.detalle||[]).forEach(d => {
+      if(!productosAgg[d.nombre]) productosAgg[d.nombre] = { cantidad: 0, total: 0 };
+      productosAgg[d.nombre].cantidad += d.cantidad;
+      productosAgg[d.nombre].total += d.subtotal;
+    });
+  });
+  const topProductos = Object.entries(productosAgg).sort((a,b)=> b[1].total - a[1].total).slice(0, 8);
+  document.getElementById("reporteProductos").innerHTML = topProductos.map(([nombre, d], i) => `
+    <div class="top-producto-row">
+      <span class="tp-rank">#${i+1}</span>
+      <div class="tp-info">
+        <div class="tp-nombre">${nombre}</div>
+        <div class="tp-cantidad">${d.cantidad} vendidos</div>
+      </div>
+      <span class="tp-total">${money(d.total)}</span>
+    </div>
+  `).join("");
+
+  // ---- Ventas por cajero ----
+  const cajeros = {};
+  filtradas.forEach(v => {
+    const nombre = v.cajero || "—";
+    if(!cajeros[nombre]) cajeros[nombre] = { total: 0, transacciones: 0 };
+    cajeros[nombre].total += v.total;
+    cajeros[nombre].transacciones += 1;
+  });
+  const cajerosOrdenados = Object.entries(cajeros).sort((a,b)=> b[1].total - a[1].total);
+  document.getElementById("bloqueCajeros").style.display = cajerosOrdenados.length > 1 ? "" : "none";
+  document.getElementById("reporteCajeros").innerHTML = cajerosOrdenados.map(([nombre, d]) => `
+    <div class="cajero-row">
+      <div>
+        <div class="cr-nombre">${nombre}</div>
+        <div class="cr-meta">${d.transacciones} venta${d.transacciones===1?'':'s'}</div>
+      </div>
+      <span class="cr-total">${money(d.total)}</span>
+    </div>
+  `).join("");
+
+  // ---- Detalle por día (expandible) ----
+  const porDia = {};
+  filtradas.forEach(v => {
+    const key = new Date(v.fecha).toISOString().slice(0,10);
+    if (!porDia[key]) porDia[key] = { ventas: 0, transacciones: [] };
+    porDia[key].ventas += v.total;
+    porDia[key].transacciones.push(v);
+  });
+  const diasOrdenados = Object.keys(porDia).sort().reverse();
+  const diasWrap = document.getElementById("reporteDiasList");
+  diasWrap.innerHTML = "";
+  diasOrdenados.forEach(key => {
+    const d = porDia[key];
+    const fechaTxt = new Date(key + "T00:00:00").toLocaleDateString('es-MX', {weekday:'short', day:'2-digit', month:'short'});
+    const card = document.createElement("div");
+    card.className = "reporte-dia-card";
+    const transHtml = d.transacciones
+      .slice()
+      .sort((a,b)=> new Date(b.fecha) - new Date(a.fecha))
+      .map(v => {
+        const hora = new Date(v.fecha).toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
+        const metodosTxt = (v.pagos||[]).map(p=>p.metodo).join(" + ") || "—";
+        return `
+          <div class="transaccion-row">
+            <span class="tr-hora">${hora}</span>
+            <span class="tr-meta">${metodosTxt} · ${v.cajero||'—'} · ${v.tipoConsumo==='llevar'?'Para llevar':'Para aquí'}</span>
+            <span class="tr-total">${money(v.total)}</span>
+          </div>`;
+      }).join("");
+    card.innerHTML = `
+      <div class="reporte-dia-header">
+        <div>
+          <div class="dh-fecha">${fechaTxt}</div>
+          <div class="dh-meta">${d.transacciones.length} transacción${d.transacciones.length===1?'':'es'}</div>
+        </div>
+        <div class="dh-right">
+          <span class="dh-total">${money(d.ventas)}</span>
+          <svg class="dh-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+      <div class="reporte-dia-transacciones">${transHtml}</div>
+    `;
+    card.querySelector(".reporte-dia-header").addEventListener("click", ()=> card.classList.toggle("open"));
+    diasWrap.appendChild(card);
+  });
 }
+
 
 document.getElementById("reportePeriodo").addEventListener("change", cargarReportes);
 document.getElementById("reporteMes").addEventListener("change", cargarReportes);
@@ -3223,10 +3428,8 @@ const PRINTER_SERVICE_UUID = "00001818-0000-1000-8000-00805f9b34fb";
 const printerState = { device:null, server:null, characteristic:null, connected:false };
 
 function updatePrinterUI(){
-  const dots = [document.getElementById("printerDot"), document.getElementById("printerDot2")];
-  const texts = [document.getElementById("printerStatusText"), document.getElementById("printerStatusText2")];
-  dots.forEach(d=> d.classList.toggle("on", printerState.connected));
-  texts.forEach(t=> t.textContent = printerState.connected ? "Conectada" : "No conectada");
+  const dot = document.getElementById("printerDot2");
+  dot.classList.toggle("on", printerState.connected);
   document.getElementById("btnDesconectarImpresora").classList.toggle("hidden", !printerState.connected);
   document.getElementById("btnConectarImpresora").textContent = printerState.connected ? "Reconectar impresora" : "Conectar impresora";
 }
