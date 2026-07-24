@@ -200,6 +200,30 @@ h1, h2, h3 { font-family: var(--font-display); margin: 0; }
   background: var(--success);
   border-color: transparent;
 }
+.user-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  color: #CFE0D3;
+}
+.user-status #userBadge {
+  background: rgba(255,255,255,0.1);
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.user-status button {
+  background: none;
+  border: none;
+  color: #CFE0D3;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 4px;
+  border-radius: 6px;
+}
+.user-status button:active { background: rgba(255,255,255,0.15); }
 
 /* ===== LAYOUT ===== */
 main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
@@ -1238,6 +1262,48 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
 }
 .categoria-item .cat-actions .cat-del:hover { background: #FBEEF1; }
 
+.usuarios-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.usuario-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--surface);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--line);
+  gap: 8px;
+}
+.usuario-item .usr-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.usuario-item .usr-nombre { font-weight: 600; font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.usuario-item .usr-rol {
+  font-size: 0.6rem;
+  color: var(--ink-soft);
+  background: var(--surface-alt);
+  padding: 1px 8px;
+  border-radius: 999px;
+  display: inline-block;
+  width: fit-content;
+}
+.usuario-item .usr-rol.admin { color: var(--amber-dark); background: var(--amber-light); }
+.usuario-item .usr-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.usuario-item .usr-actions button {
+  background: none;
+  border: none;
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+.usuario-item .usr-actions .usr-edit:hover { background: var(--surface-alt); }
+.usuario-item .usr-actions .usr-del { color: var(--berry); }
+.usuario-item .usr-actions .usr-del:hover { background: #FBEEF1; }
+
 .photo-picker { margin-bottom: 14px; }
 .photo-preview {
   width: 100%;
@@ -1341,6 +1407,21 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
   </div>
 </div>
 
+<div id="loginOverlay" class="lock-overlay hidden">
+  <div class="lock-box">
+    <div class="lock-icon">👤</div>
+    <h2>Iniciar sesión</h2>
+    <p class="lock-msg">Ingresa tu usuario y contraseña para continuar.</p>
+
+    <div class="lock-form">
+      <input type="text" id="loginUsername" placeholder="Usuario" autocomplete="username" autocapitalize="none">
+      <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="current-password">
+      <button class="btn-primary" id="btnLoginEntrar">Entrar</button>
+    </div>
+    <div class="lock-error hidden" id="loginError">Usuario o contraseña incorrectos.</div>
+  </div>
+</div>
+
 
 
 <header class="topbar">
@@ -1351,6 +1432,10 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
   <div class="printer-status" id="printerStatus">
     <span class="printer-dot" id="printerDot"></span>
     <span id="printerStatusText">Impresora</span>
+  </div>
+  <div class="user-status hidden" id="userStatus">
+    <span id="userBadge">—</span>
+    <button id="btnLogout" aria-label="Cerrar sesión" title="Cerrar sesión">⏻</button>
   </div>
 </header>
 
@@ -1415,6 +1500,7 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
       <button class="config-tab-btn" data-config-tab="categorias">Categorías</button>
       <button class="config-tab-btn" data-config-tab="impresora">Impresora</button>
       <button class="config-tab-btn" data-config-tab="catalogo">Catálogo</button>
+      <button class="config-tab-btn" data-config-tab="usuarios">Usuarios</button>
     </div>
 
     <div class="config-tab-content active" id="config-negocio">
@@ -1475,6 +1561,22 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
         </div>
         <div class="productos-horizontal" id="productosAdminList"></div>
       </div>
+    </div>
+
+    <div class="config-tab-content" id="config-usuarios">
+      <div class="config-section">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+          <h3 style="margin:0; font-size:0.9rem;">Usuarios y cajeros</h3>
+          <button class="btn-chip-add" id="btnNuevoUsuario">+ Agregar cajero</button>
+        </div>
+        <div id="usuariosList" class="usuarios-list"></div>
+      </div>
+    </div>
+
+    <div class="config-section" id="exportSection">
+      <h3 style="font-size:0.9rem;">Datos</h3>
+      <p style="font-size:0.78rem; color:var(--ink-soft); margin-bottom:10px;">Descarga una copia de tu catálogo, ventas, categorías y usuarios en un archivo .json.</p>
+      <button class="btn-secondary" id="btnExportarDB">📥 Exportar base de datos (.json)</button>
     </div>
 
     <div class="config-section" id="installSection" style="display:none;">
@@ -1546,6 +1648,36 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
       </div>
       <button class="btn-primary" id="btnGuardarCategoria">Guardar categoría</button>
       <button class="btn-danger-outline hidden" id="btnEliminarCategoriaModal" style="width:100%; margin-top:10px;">Eliminar categoría</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: USUARIO -->
+<div class="modal-overlay hidden" id="usuarioOverlay">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="usuarioModalTitulo">Agregar cajero</h2>
+      <button class="close-sheet" id="closeUsuarioModal" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field">
+        <label for="usuarioNombreInput">Nombre de usuario</label>
+        <input type="text" id="usuarioNombreInput" placeholder="Ej. juan" autocomplete="off" autocapitalize="none">
+      </div>
+      <div class="field">
+        <label for="usuarioPasswordInput">Contraseña</label>
+        <input type="password" id="usuarioPasswordInput" placeholder="Escribe una contraseña" autocomplete="new-password">
+        <div id="usuarioPasswordHint" class="hidden" style="font-size:0.72rem; color:var(--ink-soft); margin-top:4px;">Déjala en blanco para no cambiarla.</div>
+      </div>
+      <div class="field">
+        <label for="usuarioRolSelect">Rol</label>
+        <select id="usuarioRolSelect">
+          <option value="cajero">Cajero</option>
+          <option value="admin">Administrador</option>
+        </select>
+      </div>
+      <button class="btn-primary" id="btnGuardarUsuario">Guardar usuario</button>
+      <button class="btn-danger-outline hidden" id="btnEliminarUsuarioModal" style="width:100%; margin-top:10px;">Eliminar usuario</button>
     </div>
   </div>
 </div>
@@ -1800,6 +1932,223 @@ function inicializarBloqueoLicencia(){
   input.addEventListener("keydown", (e)=>{ if(e.key === "Enter") intentarActivar(); });
 }
 inicializarBloqueoLicencia();
+
+// ============================================================
+//  USUARIOS / LOGIN (admin y cajeros)
+// ============================================================
+const AUTH_SALT = "CafePOS-Auth-2026-PCFacil";
+let sesionActual = null;
+
+async function hashPassword(pw){
+  const enc = new TextEncoder().encode(pw + "|" + AUTH_SALT);
+  const buf = await crypto.subtle.digest("SHA-256", enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+function cargarUsuarios(){
+  try{
+    const raw = localStorage.getItem("pos_usuarios");
+    if(raw){
+      const arr = JSON.parse(raw);
+      if(Array.isArray(arr) && arr.length) return arr;
+    }
+  }catch(err){}
+  return null;
+}
+function guardarUsuarios(){
+  localStorage.setItem("pos_usuarios", JSON.stringify(usuarios));
+}
+let usuarios = cargarUsuarios();
+let usuarioSeq = usuarios ? (usuarios.reduce((m,u)=>Math.max(m,u.id),0)+1) : 2;
+
+function obtenerSesion(){
+  try{ return JSON.parse(localStorage.getItem("pos_sesion")); }catch(err){ return null; }
+}
+function guardarSesionActiva(u){
+  localStorage.setItem("pos_sesion", JSON.stringify({id:u.id, username:u.username, role:u.role}));
+}
+function cerrarSesion(){
+  localStorage.removeItem("pos_sesion");
+  location.reload();
+}
+
+function aplicarPermisosRol(role){
+  const configBtn = document.querySelector('.tab-btn[data-tab="config"]');
+  if(role !== "admin"){
+    if(configBtn) configBtn.style.display = "none";
+    if(document.getElementById("tab-config").classList.contains("active")){
+      document.querySelector('.tab-btn[data-tab="vender"]').click();
+    }
+  } else {
+    if(configBtn) configBtn.style.display = "";
+  }
+}
+
+function mostrarSesionEnTopbar(u){
+  const userStatus = document.getElementById("userStatus");
+  const userBadge = document.getElementById("userBadge");
+  userStatus.classList.remove("hidden");
+  userBadge.textContent = u.username + (u.role==="admin" ? " · Admin" : " · Cajero");
+}
+
+async function intentarLogin(){
+  const userInput = document.getElementById("loginUsername");
+  const passInput = document.getElementById("loginPassword");
+  const errorMsg = document.getElementById("loginError");
+  const uname = (userInput.value||"").trim().toLowerCase();
+  const pass = passInput.value || "";
+  if(!uname || !pass){
+    errorMsg.textContent = "Ingresa tu usuario y contraseña.";
+    errorMsg.classList.remove("hidden");
+    return;
+  }
+  const hash = await hashPassword(pass);
+  const encontrado = usuarios.find(u => u.username.toLowerCase()===uname && u.passwordHash===hash);
+  if(encontrado){
+    sesionActual = encontrado;
+    guardarSesionActiva(encontrado);
+    document.getElementById("loginOverlay").classList.add("hidden");
+    mostrarSesionEnTopbar(encontrado);
+    aplicarPermisosRol(encontrado.role);
+    if(encontrado.role==="admin") renderUsuariosAdmin();
+    errorMsg.classList.add("hidden");
+    passInput.value = "";
+  } else {
+    errorMsg.textContent = "Usuario o contraseña incorrectos.";
+    errorMsg.classList.remove("hidden");
+  }
+}
+document.getElementById("btnLoginEntrar").addEventListener("click", intentarLogin);
+document.getElementById("loginPassword").addEventListener("keydown", (e)=>{ if(e.key==="Enter") intentarLogin(); });
+document.getElementById("loginUsername").addEventListener("keydown", (e)=>{ if(e.key==="Enter") intentarLogin(); });
+document.getElementById("btnLogout").addEventListener("click", ()=>{
+  if(confirm("¿Cerrar sesión?")) cerrarSesion();
+});
+
+async function inicializarUsuariosYLogin(){
+  if(!usuarios){
+    usuarios = [{
+      id: 1,
+      username: "admin",
+      passwordHash: await hashPassword("123456"),
+      role: "admin"
+    }];
+    guardarUsuarios();
+  }
+  const sesion = obtenerSesion();
+  const encontrado = sesion ? usuarios.find(u=>u.id===sesion.id) : null;
+  if(encontrado){
+    sesionActual = encontrado;
+    document.getElementById("loginOverlay").classList.add("hidden");
+    mostrarSesionEnTopbar(encontrado);
+    aplicarPermisosRol(encontrado.role);
+  } else {
+    document.getElementById("loginOverlay").classList.remove("hidden");
+  }
+}
+inicializarUsuariosYLogin();
+
+// ---- Administración de usuarios (solo admin) ----
+let usuarioEditandoId = null;
+const usuarioOverlay = document.getElementById("usuarioOverlay");
+
+function renderUsuariosAdmin(){
+  const wrap = document.getElementById("usuariosList");
+  if(!wrap) return;
+  wrap.innerHTML = "";
+  usuarios.forEach(u=>{
+    const item = document.createElement("div");
+    item.className = "usuario-item";
+    item.innerHTML = `
+      <div class="usr-info">
+        <span class="usr-nombre">${u.username}</span>
+        <span class="usr-rol ${u.role==='admin'?'admin':''}">${u.role==='admin'?'Administrador':'Cajero'}</span>
+      </div>
+      <div class="usr-actions">
+        <button class="usr-edit" aria-label="Editar">✏️</button>
+        <button class="usr-del" aria-label="Eliminar">🗑️</button>
+      </div>`;
+    item.querySelector(".usr-edit").addEventListener("click", ()=> abrirModalUsuario(u.id));
+    item.querySelector(".usr-del").addEventListener("click", ()=> eliminarUsuario(u.id));
+    wrap.appendChild(item);
+  });
+}
+
+function abrirModalUsuario(id){
+  usuarioEditandoId = id || null;
+  const u = id ? usuarios.find(x=>x.id===id) : null;
+  document.getElementById("usuarioModalTitulo").textContent = u ? "Editar usuario" : "Agregar cajero";
+  document.getElementById("usuarioNombreInput").value = u ? u.username : "";
+  document.getElementById("usuarioPasswordInput").value = "";
+  document.getElementById("usuarioPasswordHint").classList.toggle("hidden", !u);
+  document.getElementById("usuarioRolSelect").value = u ? u.role : "cajero";
+  document.getElementById("btnEliminarUsuarioModal").classList.toggle("hidden", !u);
+  usuarioOverlay.classList.remove("hidden");
+}
+document.getElementById("btnNuevoUsuario").addEventListener("click", ()=> abrirModalUsuario(null));
+document.getElementById("closeUsuarioModal").addEventListener("click", ()=> usuarioOverlay.classList.add("hidden"));
+
+document.getElementById("btnGuardarUsuario").addEventListener("click", async ()=>{
+  const username = document.getElementById("usuarioNombreInput").value.trim();
+  const password = document.getElementById("usuarioPasswordInput").value;
+  const role = document.getElementById("usuarioRolSelect").value;
+  if(!username){ showToast("Ponle un nombre de usuario"); return; }
+  const duplicado = usuarios.find(u => u.username.toLowerCase()===username.toLowerCase() && u.id!==usuarioEditandoId);
+  if(duplicado){ showToast("Ese nombre de usuario ya existe"); return; }
+
+  if(usuarioEditandoId){
+    const u = usuarios.find(x=>x.id===usuarioEditandoId);
+    const eraUnicoAdmin = u.role==="admin" && usuarios.filter(x=>x.role==="admin").length===1;
+    if(eraUnicoAdmin && role!=="admin"){
+      showToast("Debe existir al menos un administrador");
+      return;
+    }
+    u.username = username;
+    u.role = role;
+    if(password) u.passwordHash = await hashPassword(password);
+  } else {
+    if(!password){ showToast("Ingresa una contraseña"); return; }
+    usuarios.push({
+      id: usuarioSeq++,
+      username,
+      passwordHash: await hashPassword(password),
+      role
+    });
+  }
+  guardarUsuarios();
+  usuarioOverlay.classList.add("hidden");
+  renderUsuariosAdmin();
+  if(sesionActual && usuarioEditandoId===sesionActual.id){
+    sesionActual = usuarios.find(u=>u.id===sesionActual.id);
+    mostrarSesionEnTopbar(sesionActual);
+  }
+  showToast("Usuario guardado");
+});
+
+function eliminarUsuario(id){
+  const u = usuarios.find(x=>x.id===id);
+  if(!u) return;
+  if(u.role==="admin" && usuarios.filter(x=>x.role==="admin").length===1){
+    showToast("Debe existir al menos un administrador");
+    return;
+  }
+  if(sesionActual && sesionActual.id===id){
+    showToast("No puedes eliminar el usuario con el que iniciaste sesión");
+    return;
+  }
+  if(!confirm(`¿Eliminar al usuario "${u.username}"?`)) return;
+  usuarios = usuarios.filter(x=>x.id!==id);
+  guardarUsuarios();
+  renderUsuariosAdmin();
+  showToast("Usuario eliminado");
+}
+document.getElementById("btnEliminarUsuarioModal").addEventListener("click", ()=>{
+  if(usuarioEditandoId){
+    usuarioOverlay.classList.add("hidden");
+    eliminarUsuario(usuarioEditandoId);
+  }
+});
+
 
 
 // ============================================================
@@ -2321,6 +2670,7 @@ setTipoConsumo(tipoConsumo);
 const tabButtons = document.querySelectorAll(".tab-btn");
 tabButtons.forEach(btn=>{
   btn.addEventListener("click", ()=>{
+    if(btn.dataset.tab==="config" && sesionActual && sesionActual.role!=="admin") return;
     tabButtons.forEach(b=>b.classList.remove("active"));
     btn.classList.add("active");
     document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
@@ -3152,6 +3502,39 @@ renderCatalog("", "", "");
 renderCart();
 renderProductosAdmin();
 cargarReportes();
+if(sesionActual && sesionActual.role==="admin") renderUsuariosAdmin();
+
+// ============================================================
+//  EXPORTAR BASE DE DATOS (.json)
+// ============================================================
+async function exportarBaseDeDatos(){
+  try{
+    const ventas = await obtenerVentas();
+    const data = {
+      exportadoEl: new Date().toISOString(),
+      negocio: configNegocio,
+      categorias: categorias,
+      productos: productos,
+      usuarios: usuarios,
+      ventas: ventas
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type:"application/json"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const fecha = new Date().toISOString().slice(0,10);
+    a.href = url;
+    a.download = `cafe-pos-backup-${fecha}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast("Base de datos exportada");
+  }catch(err){
+    showToast("No se pudo exportar la base de datos");
+  }
+}
+document.getElementById("btnExportarDB").addEventListener("click", exportarBaseDeDatos);
+
 
 }); // fin DOMContentLoaded
 </script>
