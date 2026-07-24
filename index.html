@@ -1638,7 +1638,7 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
 
 <header class="topbar">
   <div class="brand">
-    <img id="brandIcon" src="/logo-192.png" alt="Logo del negocio">
+    <img id="brandIcon" src="/logo-32x32.png" alt="Logo del negocio">
     <h1 id="brandTitle">Café POS</h1>
   </div>
   <div class="user-status hidden" id="userStatus">
@@ -2366,10 +2366,6 @@ document.getElementById("btnEliminarUsuarioModal").addEventListener("click", ()=
     eliminarUsuario(usuarioEditandoId);
   }
 });
-
-// ============================================================
-//  LOGO - ya no necesita variable, las rutas están en el HTML
-// ============================================================
 
 // ============================================================
 //  CATEGORÍAS
@@ -3564,8 +3560,8 @@ const manifest = {
   background_color: "#FBF6ED",
   theme_color: "#1F3D2B",
   icons: [
-    { src: "/logo-192.png", sizes: "192x192", type: "image/png" },
-    { src: "/logo-512.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
+    { src: "/logo-32x32.png", sizes: "192x192", type: "image/png" },
+    { src: "/logo-32x32.png", sizes: "512x512", type: "image/png", purpose: "any maskable" }
   ]
 };
 const manifestBlob = new Blob([JSON.stringify(manifest)], {type:"application/manifest+json"});
