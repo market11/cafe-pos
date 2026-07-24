@@ -1371,6 +1371,106 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
 @media (min-width: 600px) {
   .cart-bar, .cart-sheet, .bottom-nav { max-width: 600px; }
 }
+
+/* ============================================================
+   OPTIMIZACIÓN PARA CELULARES (pantallas angostas / táctiles)
+   Sube el tamaño base y agranda los elementos más pequeños,
+   sin tocar la vista de escritorio (min-width: 601px).
+   ============================================================ */
+@media (max-width: 600px) {
+  html { font-size: 18px; }
+
+  /* Topbar */
+  .topbar { padding: 12px 16px; }
+  .topbar .brand img { width: 32px; height: 32px; }
+  .topbar h1 { font-size: 1.05rem; }
+  .printer-status { font-size: 0.75rem; gap: 8px; }
+  .printer-dot { width: 9px; height: 9px; }
+  .user-status { font-size: 0.78rem; }
+  .user-status button { font-size: 1.15rem; padding: 6px; }
+
+  /* Buscador y filtros */
+  .search-bar { padding: 12px 16px; }
+  .search-bar svg { width: 19px; height: 19px; }
+  .search-bar input { font-size: 1rem; }
+  .filter-bar select { font-size: 0.85rem; padding: 10px 14px; padding-right: 34px; }
+
+  /* Catálogo */
+  .catalog-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; }
+  .product-card .info { padding: 10px 12px 12px; }
+  .product-card .nombre { font-size: 0.9rem; }
+  .product-card .precio { font-size: 0.95rem; }
+  .product-card .categoria-badge { font-size: 0.7rem; padding: 2px 9px; }
+  .product-card.popular::after { width: 28px; height: 28px; font-size: 1.1rem; }
+
+  /* Carrito */
+  .cart-bar { padding: 14px 18px; font-size: 1rem; }
+  .cart-bar .count-pill { font-size: 0.8rem; padding: 3px 9px; }
+  .cl-price, .cl-subtotal { font-size: 0.85rem; }
+  .cl-note { font-size: 0.82rem; padding: 8px 10px; }
+  .qty-control button { width: 34px; height: 34px; font-size: 1.1rem; }
+
+  /* Botones y campos táctiles: mínimo cómodo para el dedo */
+  .btn-primary, .btn-secondary, .btn-danger-outline { padding: 13px 16px; font-size: 0.92rem; min-height: 46px; }
+  .btn-chip-add { padding: 9px 16px; font-size: 0.85rem; }
+  .btn-link { font-size: 0.85rem; padding: 10px 0; }
+  .field label { font-size: 0.8rem; }
+  .field input, .field select, .field textarea,
+  input[type="text"], input[type="number"], input[type="password"],
+  input[type="month"], select, textarea { font-size: 1rem; padding: 12px 14px; }
+
+  /* Navegación inferior */
+  .bottom-nav button { font-size: 0.68rem; padding: 8px 2px 8px; gap: 3px; }
+  .bottom-nav button svg { width: 24px; height: 24px; }
+
+  /* Métodos de pago (checkout) */
+  .pay-methods button, .metodo-btn-d { font-size: 0.85rem; padding: 14px 4px; }
+  .payment-chip { font-size: 0.85rem; padding: 8px 14px; }
+  .payment-chip .pc-ref { font-size: 0.75rem; }
+
+  /* Historial y detalle de venta */
+  .venta-card .vc-fecha { font-size: 0.8rem; }
+  .venta-card .vc-meta { font-size: 0.75rem; }
+  .badge { font-size: 0.68rem; padding: 3px 9px; }
+  .detalle-panel .dp-line { font-size: 0.9rem; }
+  .dp-nota { font-size: 0.75rem; }
+
+  /* Reportes */
+  .reporte-tarjeta .rt-etiqueta { font-size: 0.7rem; }
+  .tabla-reporte { font-size: 0.82rem; }
+  .tabla-reporte th, .tabla-reporte td { padding: 10px 8px; }
+
+  /* Admin: catálogo, categorías, usuarios */
+  .productos-horizontal .producto-admin-card { flex: 0 0 165px; }
+  .productos-horizontal .producto-admin-card img { width: 66px; height: 66px; }
+  .productos-horizontal .producto-admin-card .pa-categoria { font-size: 0.7rem; }
+  .productos-horizontal .producto-admin-card .pa-popular { font-size: 0.75rem; }
+  .categoria-item, .usuario-item { padding: 12px 14px; }
+  .categoria-item .cat-nombre, .usuario-item .usr-nombre { font-size: 0.92rem; }
+  .usuario-item .usr-rol { font-size: 0.7rem; }
+  .cat-actions button, .usr-actions button { font-size: 1rem; padding: 6px 8px; }
+  .photo-btn { font-size: 0.85rem; padding: 10px; }
+
+  /* Overlays de licencia y login */
+  .lock-box { padding: 32px 22px; }
+  .lock-box h2 { font-size: 1.25rem; }
+  .lock-msg { font-size: 0.92rem; }
+  .lock-contact-item { font-size: 0.9rem; padding: 13px; }
+  .lock-device { font-size: 0.8rem; }
+  .lock-device strong { font-size: 1.05rem; }
+  .lock-form input { font-size: 1rem; padding: 14px; }
+  .lock-error { font-size: 0.85rem; }
+
+  /* Config: pestañas y secciones */
+  .config-tab-btn { font-size: 0.85rem; padding: 10px 14px; }
+  .config-section h3 { font-size: 1rem; }
+  .config-section p { font-size: 0.85rem; }
+
+  /* Modales */
+  .modal-head h2 { font-size: 1.1rem; }
+  .close-sheet { font-size: 1.2rem; padding: 8px; }
+}
+
 </style>
 </head>
 <body>
