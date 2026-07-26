@@ -1733,18 +1733,45 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
       <div class="config-section">
         <h3 style="font-size:0.9rem; margin-bottom:10px;">Impresora de tickets</h3>
         <p style="font-size:0.8rem; color:var(--ink-soft); line-height:1.5; margin-bottom:12px;">
-          Para imprimir en impresoras Bluetooth de tickets necesitas instalar la app gratuita
-          <strong>RawBT</strong> en el celular. Ahí emparejas tu impresora <strong>una sola vez</strong>;
-          después esta app le manda el ticket automáticamente cada vez que cobras.
+          Para imprimir necesitas una app puente instalada en el celular (los navegadores no pueden
+          hablarle directo a la mayoría de impresoras Bluetooth). Elige cuál usar:
         </p>
-        <div class="printer-box" style="flex-direction:column; align-items:stretch; gap:10px;">
-          <a class="btn-secondary" id="btnInstalarRawBT" href="https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter" target="_blank" rel="noopener" style="text-align:center; text-decoration:none;">📥 Instalar RawBT</a>
-          <button class="btn-secondary" id="btnPruebaImpresion">🖨️ Imprimir ticket de prueba</button>
+        <div class="field" style="margin-bottom:14px;">
+          <label for="cfgMetodoImpresion">Método de impresión</label>
+          <select id="cfgMetodoImpresion">
+            <option value="rawbt">RawBT</option>
+            <option value="parzibyte">Parzibyte (plugin local)</option>
+          </select>
         </div>
-        <p style="font-size:0.72rem; color:var(--ink-soft); margin-top:12px; line-height:1.5;">
-          ¿Ya instalaste RawBT y emparejaste la impresora ahí, pero "Imprimir ticket de prueba" no hace nada?
-          Abre RawBT, ve a su menú de impresoras y selecciona la tuya como predeterminada.
-        </p>
+
+        <!-- RAWBT -->
+        <div id="metodoRawBT" class="printer-box" style="flex-direction:column; align-items:stretch; gap:10px;">
+          <a class="btn-secondary" href="https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter" target="_blank" rel="noopener" style="text-align:center; text-decoration:none;">📥 Instalar RawBT</a>
+          <button class="btn-secondary" id="btnPruebaImpresion">🖨️ Imprimir ticket de prueba</button>
+          <p style="font-size:0.72rem; color:var(--ink-soft); line-height:1.5;">
+            Instala RawBT, empareja tu impresora dentro de esa app, y listo.
+          </p>
+        </div>
+
+        <!-- PARZIBYTE -->
+        <div id="metodoParzibyte" class="printer-box hidden" style="flex-direction:column; align-items:stretch; gap:10px;">
+          <a class="btn-secondary" href="https://github.com/parzibyte/plugin-impresora-termica-bt-android/releases/latest" target="_blank" rel="noopener" style="text-align:center; text-decoration:none;">📥 Descargar plugin de Parzibyte</a>
+          <p style="font-size:0.72rem; color:var(--ink-soft); line-height:1.5;">
+            Instala el APK, ábrelo y dale todos los permisos. Debe quedar corriendo en segundo plano
+            (déjalo abierto / sin restricción de batería) y con tu impresora ya emparejada por Bluetooth
+            en el celular.
+          </p>
+          <button class="btn-secondary" id="btnBuscarImpresorasParzibyte">🔍 Buscar impresoras</button>
+          <div class="field" id="parzibyteSelectWrap" style="display:none;">
+            <label for="parzibyteImpresoraSelect">Impresora detectada</label>
+            <select id="parzibyteImpresoraSelect"></select>
+          </div>
+          <button class="btn-secondary" id="btnPruebaImpresionParzibyte">🖨️ Imprimir ticket de prueba</button>
+          <p style="font-size:0.72rem; color:var(--ink-soft); line-height:1.5;">
+            Si "Buscar impresoras" no encuentra nada: abre el plugin, revisa que tenga los permisos de
+            Bluetooth y ubicación otorgados, y que esté corriendo en segundo plano.
+          </p>
+        </div>
       </div>
     </div>
 
@@ -2471,6 +2498,8 @@ const configNegocio = {
   telefono: localStorage.getItem("pos_telefono") || "",
   mensajeTicket: localStorage.getItem("pos_mensajeTicket") || "¡Gracias por tu compra!",
   tipoConsumoDefault: localStorage.getItem("pos_tipoConsumoDefault") || "aqui",
+  metodoImpresion: localStorage.getItem("pos_metodoImpresion") || "rawbt",
+  impresoraParzibyte: localStorage.getItem("pos_impresoraParzibyte") || "",
 };
 
 document.getElementById("cfgNombreNegocio").value = configNegocio.nombre;
@@ -3385,15 +3414,17 @@ document.getElementById("reporteMes").addEventListener("change", cargarReportes)
 document.getElementById("reporteAnio").addEventListener("change", cargarReportes);
 
 // ============================================================
-//  IMPRESIÓN DE TICKETS (vía RawBT)
+//  IMPRESIÓN DE TICKETS (vía RawBT o Parzibyte)
 // ============================================================
 // La mayoría de las impresoras térmicas baratas usan Bluetooth
 // "clásico" (perfil SPP), no Bluetooth de baja energía (BLE/GATT).
 // Web Bluetooth (navigator.bluetooth) SOLO puede hablar con BLE,
 // por eso nunca las encuentra aunque ya estén emparejadas en el
-// celular. RawBT es una app Android gratuita que sí tiene acceso
-// nativo a Bluetooth clásico, WiFi y USB: le mandamos el ticket
-// ya armado (bytes ESC/POS) y ella se encarga de imprimirlo.
+// celular. RawBT y el plugin de Parzibyte son apps Android que sí
+// tienen acceso nativo a Bluetooth clásico: les mandamos el ticket
+// y ellas se encargan de imprimirlo.
+
+// ---- RawBT ----
 const RAWBT_PACKAGE = "ru.a402d.rawbtprinter";
 
 function construirPayloadTicket(texto){
@@ -3417,19 +3448,63 @@ function enviarARawBT(texto){
   window.location.href = url;
 }
 
-async function intentarImprimir(venta, esReimpresion){
-  const texto = formatearTicket(venta);
-  try{
-    enviarARawBT(texto);
-    showToast(esReimpresion ? "Ticket reimpreso" : "Ticket enviado a imprimir");
-  }catch(err){
-    showToast("No se pudo abrir RawBT. ¿Está instalada?");
+// ---- Parzibyte (plugin local, servidor HTTP en el propio celular) ----
+const PARZIBYTE_URL = "http://localhost:8000";
+
+async function listarImpresorasParzibyte(){
+  const resp = await fetch(PARZIBYTE_URL + "/impresoras");
+  if(!resp.ok) throw new Error("No se pudo consultar el plugin");
+  return await resp.json(); // arreglo de strings con nombres de impresoras
+}
+
+async function enviarAParzibyte(texto){
+  if(!configNegocio.impresoraParzibyte){
+    showToast("Primero busca y elige tu impresora en Configuración");
+    return;
+  }
+  const cargaUtil = {
+    serial: "",
+    impresora: configNegocio.impresoraParzibyte,
+    operaciones: [
+      { nombre: "Iniciar", argumentos: [] },
+      { nombre: "EscribirTexto", argumentos: [texto] },
+      { nombre: "Feed", argumentos: [2] },
+      { nombre: "Corte", argumentos: [1] }
+    ]
+  };
+  const resp = await fetch(PARZIBYTE_URL + "/imprimir", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(cargaUtil)
+  });
+  const data = await resp.json();
+  if(!data.ok){
+    throw new Error(data.message || "El plugin reportó un error");
   }
 }
 
-document.getElementById("btnPruebaImpresion").addEventListener("click", ()=>{
-  const textoPrueba =
-    "--------------------------------\n" +
+// ---- Enrutador según el método elegido en Configuración ----
+async function intentarImprimir(venta, esReimpresion){
+  const texto = formatearTicket(venta);
+  if(configNegocio.metodoImpresion === "parzibyte"){
+    try{
+      await enviarAParzibyte(texto);
+      showToast(esReimpresion ? "Ticket reimpreso" : "Ticket enviado a imprimir");
+    }catch(err){
+      showToast("No se pudo imprimir. ¿El plugin de Parzibyte está abierto?");
+    }
+  } else {
+    try{
+      enviarARawBT(texto);
+      showToast(esReimpresion ? "Ticket reimpreso" : "Ticket enviado a imprimir");
+    }catch(err){
+      showToast("No se pudo abrir RawBT. ¿Está instalada?");
+    }
+  }
+}
+
+function textoTicketPrueba(){
+  return "--------------------------------\n" +
     "        TICKET DE PRUEBA\n" +
     "--------------------------------\n" +
     (configNegocio.nombre || "Mi Cafetería") + "\n" +
@@ -3438,7 +3513,65 @@ document.getElementById("btnPruebaImpresion").addEventListener("click", ()=>{
     "Si esto se imprimió, tu impresora\n" +
     "ya está lista para usarse.\n" +
     "--------------------------------\n\n\n";
-  enviarARawBT(textoPrueba);
+}
+
+document.getElementById("btnPruebaImpresion").addEventListener("click", ()=>{
+  enviarARawBT(textoTicketPrueba());
+});
+
+document.getElementById("btnPruebaImpresionParzibyte").addEventListener("click", async ()=>{
+  try{
+    await enviarAParzibyte(textoTicketPrueba());
+    showToast("Ticket de prueba enviado");
+  }catch(err){
+    showToast("No se pudo imprimir. ¿El plugin de Parzibyte está abierto?");
+  }
+});
+
+document.getElementById("btnBuscarImpresorasParzibyte").addEventListener("click", async ()=>{
+  const boton = document.getElementById("btnBuscarImpresorasParzibyte");
+  const wrap = document.getElementById("parzibyteSelectWrap");
+  const select = document.getElementById("parzibyteImpresoraSelect");
+  boton.textContent = "Buscando…";
+  boton.disabled = true;
+  try{
+    const impresoras = await listarImpresorasParzibyte();
+    if(!impresoras || impresoras.length === 0){
+      showToast("No se detectaron impresoras. Revisa que el plugin esté abierto y con permisos.");
+    } else {
+      select.innerHTML = impresoras.map(nombre =>
+        `<option value="${nombre}" ${nombre===configNegocio.impresoraParzibyte ? "selected" : ""}>${nombre}</option>`
+      ).join("");
+      wrap.style.display = "";
+      if(!configNegocio.impresoraParzibyte){
+        configNegocio.impresoraParzibyte = impresoras[0];
+        localStorage.setItem("pos_impresoraParzibyte", configNegocio.impresoraParzibyte);
+      }
+      showToast(`${impresoras.length} impresora(s) encontrada(s)`);
+    }
+  }catch(err){
+    showToast("No se pudo conectar con el plugin. ¿Está abierto en el celular?");
+  }
+  boton.textContent = "🔍 Buscar impresoras";
+  boton.disabled = false;
+});
+
+document.getElementById("parzibyteImpresoraSelect").addEventListener("change", function(){
+  configNegocio.impresoraParzibyte = this.value;
+  localStorage.setItem("pos_impresoraParzibyte", configNegocio.impresoraParzibyte);
+});
+
+document.getElementById("cfgMetodoImpresion").value = configNegocio.metodoImpresion;
+function actualizarVisibilidadMetodoImpresion(){
+  const esParzibyte = configNegocio.metodoImpresion === "parzibyte";
+  document.getElementById("metodoRawBT").classList.toggle("hidden", esParzibyte);
+  document.getElementById("metodoParzibyte").classList.toggle("hidden", !esParzibyte);
+}
+actualizarVisibilidadMetodoImpresion();
+document.getElementById("cfgMetodoImpresion").addEventListener("change", function(){
+  configNegocio.metodoImpresion = this.value;
+  localStorage.setItem("pos_metodoImpresion", configNegocio.metodoImpresion);
+  actualizarVisibilidadMetodoImpresion();
 });
 
 function formatearTicket(venta){
