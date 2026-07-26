@@ -1761,16 +1761,17 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
             (déjalo abierto / sin restricción de batería) y con tu impresora ya emparejada por Bluetooth
             en el celular.
           </p>
-          <button class="btn-secondary" id="btnBuscarImpresorasParzibyte">🔍 Buscar impresoras</button>
-          <div class="field" id="parzibyteSelectWrap" style="display:none;">
-            <label for="parzibyteImpresoraSelect">Impresora detectada</label>
-            <select id="parzibyteImpresoraSelect"></select>
+          <div class="field">
+            <label for="parzibyteMacInput">Dirección MAC de tu impresora</label>
+            <input type="text" id="parzibyteMacInput" placeholder="Ej. 66:32:0A:2B:C5:DA" autocomplete="off" autocapitalize="characters">
+            <div style="font-size:0.72rem; color:var(--ink-soft); margin-top:4px; line-height:1.5;">
+              Ábrela así: dentro del plugin de Parzibyte, entra a <strong>"Ver impresoras disponibles"</strong>
+              y copia ahí la dirección MAC de tu impresora (la búsqueda automática desde esta app no es
+              confiable, así que este método directo es el que recomienda el propio autor del plugin).
+            </div>
           </div>
+          <button class="btn-secondary" id="btnGuardarMacParzibyte">Guardar impresora</button>
           <button class="btn-secondary" id="btnPruebaImpresionParzibyte">🖨️ Imprimir ticket de prueba</button>
-          <p style="font-size:0.72rem; color:var(--ink-soft); line-height:1.5;">
-            Si "Buscar impresoras" no encuentra nada: abre el plugin, revisa que tenga los permisos de
-            Bluetooth y ubicación otorgados, y que esté corriendo en segundo plano.
-          </p>
         </div>
       </div>
     </div>
@@ -3450,16 +3451,13 @@ function enviarARawBT(texto){
 
 // ---- Parzibyte (plugin local, servidor HTTP en el propio celular) ----
 const PARZIBYTE_URL = "http://localhost:8000";
-
-async function listarImpresorasParzibyte(){
-  const resp = await fetch(PARZIBYTE_URL + "/impresoras");
-  if(!resp.ok) throw new Error("No se pudo consultar el plugin");
-  return await resp.json(); // arreglo de strings con nombres de impresoras
-}
+// Nota: el propio autor del plugin no recomienda usar /impresoras para
+// autodetectar (a veces se queda esperando o devuelve vacío). Por eso
+// aquí se usa la MAC de la impresora ingresada manualmente.
 
 async function enviarAParzibyte(texto){
   if(!configNegocio.impresoraParzibyte){
-    showToast("Primero busca y elige tu impresora en Configuración");
+    showToast("Primero guarda la MAC de tu impresora en Configuración");
     return;
   }
   const cargaUtil = {
@@ -3491,7 +3489,7 @@ async function intentarImprimir(venta, esReimpresion){
       await enviarAParzibyte(texto);
       showToast(esReimpresion ? "Ticket reimpreso" : "Ticket enviado a imprimir");
     }catch(err){
-      showToast("No se pudo imprimir. ¿El plugin de Parzibyte está abierto?");
+      showToast("Error al imprimir: " + err.message);
     }
   } else {
     try{
@@ -3524,41 +3522,17 @@ document.getElementById("btnPruebaImpresionParzibyte").addEventListener("click",
     await enviarAParzibyte(textoTicketPrueba());
     showToast("Ticket de prueba enviado");
   }catch(err){
-    showToast("No se pudo imprimir. ¿El plugin de Parzibyte está abierto?");
+    showToast("Error al imprimir: " + err.message);
   }
 });
 
-document.getElementById("btnBuscarImpresorasParzibyte").addEventListener("click", async ()=>{
-  const boton = document.getElementById("btnBuscarImpresorasParzibyte");
-  const wrap = document.getElementById("parzibyteSelectWrap");
-  const select = document.getElementById("parzibyteImpresoraSelect");
-  boton.textContent = "Buscando…";
-  boton.disabled = true;
-  try{
-    const impresoras = await listarImpresorasParzibyte();
-    if(!impresoras || impresoras.length === 0){
-      showToast("No se detectaron impresoras. Revisa que el plugin esté abierto y con permisos.");
-    } else {
-      select.innerHTML = impresoras.map(nombre =>
-        `<option value="${nombre}" ${nombre===configNegocio.impresoraParzibyte ? "selected" : ""}>${nombre}</option>`
-      ).join("");
-      wrap.style.display = "";
-      if(!configNegocio.impresoraParzibyte){
-        configNegocio.impresoraParzibyte = impresoras[0];
-        localStorage.setItem("pos_impresoraParzibyte", configNegocio.impresoraParzibyte);
-      }
-      showToast(`${impresoras.length} impresora(s) encontrada(s)`);
-    }
-  }catch(err){
-    showToast("No se pudo conectar con el plugin. ¿Está abierto en el celular?");
-  }
-  boton.textContent = "🔍 Buscar impresoras";
-  boton.disabled = false;
-});
-
-document.getElementById("parzibyteImpresoraSelect").addEventListener("change", function(){
-  configNegocio.impresoraParzibyte = this.value;
-  localStorage.setItem("pos_impresoraParzibyte", configNegocio.impresoraParzibyte);
+document.getElementById("parzibyteMacInput").value = configNegocio.impresoraParzibyte;
+document.getElementById("btnGuardarMacParzibyte").addEventListener("click", ()=>{
+  const mac = document.getElementById("parzibyteMacInput").value.trim();
+  if(!mac){ showToast("Escribe la MAC de tu impresora"); return; }
+  configNegocio.impresoraParzibyte = mac;
+  localStorage.setItem("pos_impresoraParzibyte", mac);
+  showToast("Impresora guardada");
 });
 
 document.getElementById("cfgMetodoImpresion").value = configNegocio.metodoImpresion;
