@@ -3139,7 +3139,12 @@ async function finalizarVenta(pagos){
 
   const imprimir = document.getElementById("switchImprimir").checked;
   if(imprimir){
-    await intentarImprimir(venta);
+    try{
+      await intentarImprimir(venta);
+    }catch(err){
+      // La venta ya se guardó; un fallo de impresión nunca debe bloquear el cobro.
+      showToast("Venta registrada, pero no se pudo imprimir el ticket");
+    }
   }
 
   carrito = [];
@@ -3444,8 +3449,10 @@ function bytesABase64(bytes){
 function enviarARawBT(texto){
   const payload = construirPayloadTicket(texto);
   const base64 = bytesABase64(payload);
-  const fallback = encodeURIComponent("https://play.google.com/store/apps/details?id=" + RAWBT_PACKAGE);
-  const url = "intent:base64," + base64 + "#Intent;scheme=rawbt;package=" + RAWBT_PACKAGE + ";S.browser_fallback_url=" + fallback + ";end;";
+  // Sin "S.browser_fallback_url": si RawBT no está instalada, el navegador
+  // simplemente no hace nada, en vez de salirse de la app hacia la Play Store
+  // (eso era lo que rompía el cobro cuando RawBT no estaba lista).
+  const url = "intent:base64," + base64 + "#Intent;scheme=rawbt;package=" + RAWBT_PACKAGE + ";end;";
   window.location.href = url;
 }
 
