@@ -1731,12 +1731,20 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
 
     <div class="config-tab-content" id="config-impresora">
       <div class="config-section">
-        <h3 style="font-size:0.9rem; margin-bottom:10px;">Impresora Bluetooth</h3>
-        <div class="printer-box">
-          <div class="pb-status"><span class="printer-dot" id="printerDot2"></span></div>
-          <button class="btn-secondary" id="btnConectarImpresora">Conectar impresora</button>
-          <button class="btn-danger-outline hidden" id="btnDesconectarImpresora">Olvidar impresora</button>
+        <h3 style="font-size:0.9rem; margin-bottom:10px;">Impresora de tickets</h3>
+        <p style="font-size:0.8rem; color:var(--ink-soft); line-height:1.5; margin-bottom:12px;">
+          Para imprimir en impresoras Bluetooth de tickets necesitas instalar la app gratuita
+          <strong>RawBT</strong> en el celular. Ahí emparejas tu impresora <strong>una sola vez</strong>;
+          después esta app le manda el ticket automáticamente cada vez que cobras.
+        </p>
+        <div class="printer-box" style="flex-direction:column; align-items:stretch; gap:10px;">
+          <a class="btn-secondary" id="btnInstalarRawBT" href="https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter" target="_blank" rel="noopener" style="text-align:center; text-decoration:none;">📥 Instalar RawBT</a>
+          <button class="btn-secondary" id="btnPruebaImpresion">🖨️ Imprimir ticket de prueba</button>
         </div>
+        <p style="font-size:0.72rem; color:var(--ink-soft); margin-top:12px; line-height:1.5;">
+          ¿Ya instalaste RawBT y emparejaste la impresora ahí, pero "Imprimir ticket de prueba" no hace nada?
+          Abre RawBT, ve a su menú de impresoras y selecciona la tuya como predeterminada.
+        </p>
       </div>
     </div>
 
@@ -3377,64 +3385,60 @@ document.getElementById("reporteMes").addEventListener("change", cargarReportes)
 document.getElementById("reporteAnio").addEventListener("change", cargarReportes);
 
 // ============================================================
-//  IMPRESIÓN BLUETOOTH
+//  IMPRESIÓN DE TICKETS (vía RawBT)
 // ============================================================
-const PRINTER_SERVICE_UUID = "00001818-0000-1000-8000-00805f9b34fb";
-const printerState = { device:null, server:null, characteristic:null, connected:false };
+// La mayoría de las impresoras térmicas baratas usan Bluetooth
+// "clásico" (perfil SPP), no Bluetooth de baja energía (BLE/GATT).
+// Web Bluetooth (navigator.bluetooth) SOLO puede hablar con BLE,
+// por eso nunca las encuentra aunque ya estén emparejadas en el
+// celular. RawBT es una app Android gratuita que sí tiene acceso
+// nativo a Bluetooth clásico, WiFi y USB: le mandamos el ticket
+// ya armado (bytes ESC/POS) y ella se encarga de imprimirlo.
+const RAWBT_PACKAGE = "ru.a402d.rawbtprinter";
 
-function updatePrinterUI(){
-  const dot = document.getElementById("printerDot2");
-  dot.classList.toggle("on", printerState.connected);
-  document.getElementById("btnDesconectarImpresora").classList.toggle("hidden", !printerState.connected);
-  document.getElementById("btnConectarImpresora").textContent = printerState.connected ? "Reconectar impresora" : "Conectar impresora";
+function construirPayloadTicket(texto){
+  const encoder = new TextEncoder();
+  const init = new Uint8Array([0x1B,0x40]); // reset impresora
+  const cut = new Uint8Array([0x0A,0x0A,0x1D,0x56,0x00]); // avanzar y cortar
+  return new Uint8Array([...init, ...encoder.encode(texto), ...cut]);
 }
-updatePrinterUI();
 
-async function conectarImpresora(){
-  if(!navigator.bluetooth){
-    alert("Este navegador no soporta Web Bluetooth. Usa Chrome en Android para imprimir por Bluetooth.");
-    return false;
-  }
+function bytesABase64(bytes){
+  let binario = "";
+  for(let i=0; i<bytes.length; i++) binario += String.fromCharCode(bytes[i]);
+  return btoa(binario);
+}
+
+function enviarARawBT(texto){
+  const payload = construirPayloadTicket(texto);
+  const base64 = bytesABase64(payload);
+  const fallback = encodeURIComponent("https://play.google.com/store/apps/details?id=" + RAWBT_PACKAGE);
+  const url = "intent:base64," + base64 + "#Intent;scheme=rawbt;package=" + RAWBT_PACKAGE + ";S.browser_fallback_url=" + fallback + ";end;";
+  window.location.href = url;
+}
+
+async function intentarImprimir(venta, esReimpresion){
+  const texto = formatearTicket(venta);
   try{
-    const device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [PRINTER_SERVICE_UUID] }],
-      optionalServices: [PRINTER_SERVICE_UUID]
-    });
-    const server = await device.gatt.connect();
-    const service = await server.getPrimaryService(PRINTER_SERVICE_UUID);
-    const characteristics = await service.getCharacteristics();
-    const writable = characteristics.find(c=> c.properties.write || c.properties.writeWithoutResponse) || characteristics[0];
-    printerState.device = device;
-    printerState.server = server;
-    printerState.characteristic = writable;
-    printerState.connected = true;
-    device.addEventListener("gattserverdisconnected", ()=>{
-      printerState.connected = false;
-      updatePrinterUI();
-      showToast("Impresora desconectada");
-    });
-    updatePrinterUI();
-    showToast("Impresora conectada");
-    return true;
+    enviarARawBT(texto);
+    showToast(esReimpresion ? "Ticket reimpreso" : "Ticket enviado a imprimir");
   }catch(err){
-    printerState.connected = false;
-    updatePrinterUI();
-    document.getElementById("switchImprimir").checked = false;
-    if(err && err.name !== "NotFoundError"){
-      alert("No se pudo conectar con la impresora. Se desactivó 'Imprimir ticket'.");
-    }
-    return false;
+    showToast("No se pudo abrir RawBT. ¿Está instalada?");
   }
 }
-document.getElementById("btnConectarImpresora").addEventListener("click", conectarImpresora);
-document.getElementById("btnDesconectarImpresora").addEventListener("click", ()=>{
-  if(printerState.device && printerState.device.gatt.connected){
-    printerState.device.gatt.disconnect();
-  }
-  printerState.connected = false;
-  printerState.device = null;
-  printerState.characteristic = null;
-  updatePrinterUI();
+
+document.getElementById("btnPruebaImpresion").addEventListener("click", ()=>{
+  const textoPrueba =
+    "--------------------------------\n" +
+    "        TICKET DE PRUEBA\n" +
+    "--------------------------------\n" +
+    (configNegocio.nombre || "Mi Cafetería") + "\n" +
+    new Date().toLocaleString("es-MX") + "\n" +
+    "--------------------------------\n" +
+    "Si esto se imprimió, tu impresora\n" +
+    "ya está lista para usarse.\n" +
+    "--------------------------------\n\n\n";
+  enviarARawBT(textoPrueba);
 });
 
 function formatearTicket(venta){
@@ -3480,46 +3484,6 @@ function formatearTicket(venta){
   }
   t += "\n\n\n";
   return t;
-}
-
-async function enviarAImpresora(texto){
-  if(!printerState.characteristic) return false;
-  const encoder = new TextEncoder();
-  const init = new Uint8Array([0x1B,0x40]);
-  const cut = new Uint8Array([0x0A,0x0A,0x1D,0x56,0x00]);
-  const payload = new Uint8Array([...init, ...encoder.encode(texto), ...cut]);
-  const CHUNK = 180;
-  try{
-    for(let i=0;i<payload.length;i+=CHUNK){
-      const chunk = payload.slice(i,i+CHUNK);
-      if(printerState.characteristic.properties.writeWithoutResponse){
-        await printerState.characteristic.writeValueWithoutResponse(chunk);
-      } else {
-        await printerState.characteristic.writeValue(chunk);
-      }
-    }
-    return true;
-  }catch(err){
-    return false;
-  }
-}
-
-async function intentarImprimir(venta, esReimpresion){
-  if(!navigator.bluetooth){
-    alert("Este navegador no soporta impresión Bluetooth. El ticket no se imprimió.");
-    return;
-  }
-  if(!printerState.connected){
-    const ok = await conectarImpresora();
-    if(!ok) return;
-  }
-  const texto = formatearTicket(venta);
-  const enviado = await enviarAImpresora(texto);
-  if(enviado){
-    showToast(esReimpresion ? "Ticket reimpreso" : "Ticket enviado a impresora");
-  } else {
-    showToast("No se pudo imprimir el ticket");
-  }
 }
 
 // ============================================================
