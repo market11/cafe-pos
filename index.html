@@ -3491,12 +3491,12 @@ async function enviarAParzibyte(texto){
   }
   const cargaUtil = {
     serial: "",
-    impresora: configNegocio.impresoraParzibyte,
+    nombreImpresora: configNegocio.impresoraParzibyte,
     operaciones: [
       { nombre: "Iniciar", argumentos: [] },
       { nombre: "EscribirTexto", argumentos: [texto] },
       { nombre: "Feed", argumentos: [2] },
-      { nombre: "Corte", argumentos: [1] }
+      { nombre: "CortarPapel", argumentos: [] }
     ]
   };
   const resp = await fetch(PARZIBYTE_URL + "/imprimir", {
