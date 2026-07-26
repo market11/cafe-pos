@@ -1739,8 +1739,9 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
         <div class="field" style="margin-bottom:14px;">
           <label for="cfgMetodoImpresion">Método de impresión</label>
           <select id="cfgMetodoImpresion">
-            <option value="rawbt">RawBT</option>
-            <option value="parzibyte">Parzibyte (plugin local)</option>
+            <option value="rawbt">RawBT (celular Android)</option>
+            <option value="parzibyte">Parzibyte Bluetooth (celular Android)</option>
+            <option value="parzibyte_desktop">Parzibyte Escritorio (Windows / PC)</option>
           </select>
         </div>
 
@@ -1753,7 +1754,7 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
           </p>
         </div>
 
-        <!-- PARZIBYTE -->
+        <!-- PARZIBYTE (ANDROID) -->
         <div id="metodoParzibyte" class="printer-box hidden" style="flex-direction:column; align-items:stretch; gap:10px;">
           <a class="btn-secondary" href="https://github.com/parzibyte/plugin-impresora-termica-bt-android/releases/latest" target="_blank" rel="noopener" style="text-align:center; text-decoration:none;">📥 Descargar plugin de Parzibyte</a>
           <p style="font-size:0.72rem; color:var(--ink-soft); line-height:1.5;">
@@ -1767,11 +1768,31 @@ main { flex: 1; overflow-y: auto; padding-bottom: 8px; }
             <div style="font-size:0.72rem; color:var(--ink-soft); margin-top:4px; line-height:1.5;">
               Ábrela así: dentro del plugin de Parzibyte, entra a <strong>"Ver impresoras disponibles"</strong>
               y copia ahí la dirección MAC de tu impresora (la búsqueda automática desde esta app no es
-              confiable, así que este método directo es el que recomienda el propio autor del plugin).
+              confiable en Android, así que este método directo es el que recomienda el propio autor del plugin).
             </div>
           </div>
           <button class="btn-secondary" id="btnGuardarMacParzibyte">Guardar impresora</button>
           <button class="btn-secondary" id="btnPruebaImpresionParzibyte">🖨️ Imprimir ticket de prueba</button>
+        </div>
+
+        <!-- PARZIBYTE (ESCRITORIO / WINDOWS) -->
+        <div id="metodoParzibyteDesktop" class="printer-box hidden" style="flex-direction:column; align-items:stretch; gap:10px;">
+          <a class="btn-secondary" href="https://parzibyte.me/http-esc-pos-desktop-docs/es/guia/descargar.html" target="_blank" rel="noopener" style="text-align:center; text-decoration:none;">📥 Descargar plugin de escritorio</a>
+          <p style="font-size:0.72rem; color:var(--ink-soft); line-height:1.5;">
+            Instálalo en la PC/laptop con Windows donde ya tienes la impresora instalada, y déjalo
+            corriendo en segundo plano. A diferencia de la versión de Android, aquí "Buscar impresoras"
+            sí es confiable.
+          </p>
+          <button class="btn-secondary" id="btnBuscarImpresorasDesktop">🔍 Buscar impresoras</button>
+          <div class="field" id="parzibyteDesktopSelectWrap" style="display:none;">
+            <label for="parzibyteDesktopSelect">Impresora detectada</label>
+            <select id="parzibyteDesktopSelect"></select>
+          </div>
+          <button class="btn-secondary" id="btnPruebaImpresionDesktop">🖨️ Imprimir ticket de prueba</button>
+          <p style="font-size:0.72rem; color:var(--ink-soft); line-height:1.5;">
+            Al buscar, Windows abrirá brevemente una ventanita negra (PowerShell) — es normal, es cómo
+            el plugin consulta tus impresoras instaladas. Se cierra sola.
+          </p>
         </div>
       </div>
     </div>
@@ -2501,6 +2522,7 @@ const configNegocio = {
   tipoConsumoDefault: localStorage.getItem("pos_tipoConsumoDefault") || "aqui",
   metodoImpresion: localStorage.getItem("pos_metodoImpresion") || "rawbt",
   impresoraParzibyte: localStorage.getItem("pos_impresoraParzibyte") || "",
+  impresoraParzibyteDesktop: localStorage.getItem("pos_impresoraParzibyteDesktop") || "",
 };
 
 document.getElementById("cfgNombreNegocio").value = configNegocio.nombre;
@@ -3488,12 +3510,52 @@ async function enviarAParzibyte(texto){
   }
 }
 
+// ---- Parzibyte Escritorio (Windows/Linux, impresora ya instalada en el sistema) ----
+async function listarImpresorasDesktop(){
+  const resp = await fetch(PARZIBYTE_URL + "/impresoras");
+  if(!resp.ok) throw new Error("No se pudo consultar el plugin");
+  return await resp.json();
+}
+
+async function enviarAParzibyteDesktop(texto){
+  if(!configNegocio.impresoraParzibyteDesktop){
+    showToast("Primero busca y elige tu impresora en Configuración");
+    return;
+  }
+  const cargaUtil = {
+    serial: "",
+    nombreImpresora: configNegocio.impresoraParzibyteDesktop,
+    operaciones: [
+      { nombre: "Iniciar", argumentos: [] },
+      { nombre: "EscribirTexto", argumentos: [texto] },
+      { nombre: "Feed", argumentos: [2] },
+      { nombre: "CortarPapel", argumentos: [] }
+    ]
+  };
+  const resp = await fetch(PARZIBYTE_URL + "/imprimir", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(cargaUtil)
+  });
+  const data = await resp.json();
+  if(!data.ok){
+    throw new Error(data.message || "El plugin reportó un error");
+  }
+}
+
 // ---- Enrutador según el método elegido en Configuración ----
 async function intentarImprimir(venta, esReimpresion){
   const texto = formatearTicket(venta);
   if(configNegocio.metodoImpresion === "parzibyte"){
     try{
       await enviarAParzibyte(texto);
+      showToast(esReimpresion ? "Ticket reimpreso" : "Ticket enviado a imprimir");
+    }catch(err){
+      showToast("Error al imprimir: " + err.message);
+    }
+  } else if(configNegocio.metodoImpresion === "parzibyte_desktop"){
+    try{
+      await enviarAParzibyteDesktop(texto);
       showToast(esReimpresion ? "Ticket reimpreso" : "Ticket enviado a imprimir");
     }catch(err){
       showToast("Error al imprimir: " + err.message);
@@ -3542,11 +3604,54 @@ document.getElementById("btnGuardarMacParzibyte").addEventListener("click", ()=>
   showToast("Impresora guardada");
 });
 
+document.getElementById("btnPruebaImpresionDesktop").addEventListener("click", async ()=>{
+  try{
+    await enviarAParzibyteDesktop(textoTicketPrueba());
+    showToast("Ticket de prueba enviado");
+  }catch(err){
+    showToast("Error al imprimir: " + err.message);
+  }
+});
+
+document.getElementById("btnBuscarImpresorasDesktop").addEventListener("click", async ()=>{
+  const boton = document.getElementById("btnBuscarImpresorasDesktop");
+  const wrap = document.getElementById("parzibyteDesktopSelectWrap");
+  const select = document.getElementById("parzibyteDesktopSelect");
+  boton.textContent = "Buscando…";
+  boton.disabled = true;
+  try{
+    const impresoras = await listarImpresorasDesktop();
+    if(!impresoras || impresoras.length === 0){
+      showToast("No se detectaron impresoras. Revisa que el plugin esté abierto.");
+    } else {
+      select.innerHTML = impresoras.map(nombre =>
+        `<option value="${nombre}" ${nombre===configNegocio.impresoraParzibyteDesktop ? "selected" : ""}>${nombre}</option>`
+      ).join("");
+      wrap.style.display = "";
+      if(!configNegocio.impresoraParzibyteDesktop || !impresoras.includes(configNegocio.impresoraParzibyteDesktop)){
+        configNegocio.impresoraParzibyteDesktop = impresoras[0];
+        localStorage.setItem("pos_impresoraParzibyteDesktop", configNegocio.impresoraParzibyteDesktop);
+      }
+      showToast(`${impresoras.length} impresora(s) encontrada(s)`);
+    }
+  }catch(err){
+    showToast("No se pudo conectar con el plugin. ¿Está abierto en la PC?");
+  }
+  boton.textContent = "🔍 Buscar impresoras";
+  boton.disabled = false;
+});
+
+document.getElementById("parzibyteDesktopSelect").addEventListener("change", function(){
+  configNegocio.impresoraParzibyteDesktop = this.value;
+  localStorage.setItem("pos_impresoraParzibyteDesktop", configNegocio.impresoraParzibyteDesktop);
+});
+
 document.getElementById("cfgMetodoImpresion").value = configNegocio.metodoImpresion;
 function actualizarVisibilidadMetodoImpresion(){
-  const esParzibyte = configNegocio.metodoImpresion === "parzibyte";
-  document.getElementById("metodoRawBT").classList.toggle("hidden", esParzibyte);
-  document.getElementById("metodoParzibyte").classList.toggle("hidden", !esParzibyte);
+  const metodo = configNegocio.metodoImpresion;
+  document.getElementById("metodoRawBT").classList.toggle("hidden", metodo !== "rawbt");
+  document.getElementById("metodoParzibyte").classList.toggle("hidden", metodo !== "parzibyte");
+  document.getElementById("metodoParzibyteDesktop").classList.toggle("hidden", metodo !== "parzibyte_desktop");
 }
 actualizarVisibilidadMetodoImpresion();
 document.getElementById("cfgMetodoImpresion").addEventListener("change", function(){
